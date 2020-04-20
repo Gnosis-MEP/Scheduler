@@ -7,6 +7,7 @@ stages:
 variables:
   SERVICE_STREAM_KEY: sc-data
   SERVICE_CMD_KEY: sc-cmd
+  EVENT_DISPATCHER_STREAM_KEY: ed-data
   LOGGING_LEVEL: DEBUG
 
 Build Image:

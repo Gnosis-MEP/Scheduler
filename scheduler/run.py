@@ -7,6 +7,7 @@ from scheduler.conf import (
     REDIS_ADDRESS,
     REDIS_PORT,
     SERVICE_STREAM_KEY,
+    EVENT_DISPATCHER_STREAM_KEY,
     SERVICE_CMD_KEY,
     LOGGING_LEVEL,
     TRACER_REPORTING_HOST,
@@ -23,6 +24,7 @@ def run_service():
     service = Scheduler(
         service_stream_key=SERVICE_STREAM_KEY,
         service_cmd_key=SERVICE_CMD_KEY,
+        event_dispatcher_data_key=EVENT_DISPATCHER_STREAM_KEY,
         stream_factory=stream_factory,
         logging_level=LOGGING_LEVEL,
         tracer_configs=tracer_configs
