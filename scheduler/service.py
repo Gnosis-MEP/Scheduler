@@ -50,27 +50,6 @@ class Scheduler(BaseTracerService):
         new_event_data = self.apply_dataflow_to_event(event_data)
         self.send_event_to_dispatcher(new_event_data)
 
-    def process_data(self):
-        stream_sources_events = list(self.all_events_consumer_group.read_stream_events_list(count=1))
-        if stream_sources_events:
-            self.logger.debug(f'Processing DATA.. {stream_sources_events}')
-
-        for stream_key_bytes, event_list in stream_sources_events:
-            stream_key = stream_key_bytes
-            if type(stream_key_bytes) == bytes:
-                stream_key = stream_key_bytes.decode('utf-8')
-            for event_tuple in event_list:
-                event_id, json_msg = event_tuple
-                try:
-                    event_data = self.default_event_deserializer(json_msg)
-                    event_data.update({
-                        'buffer_stream_key': stream_key
-                    })
-                    self.process_data_event_wrapper(event_data, json_msg)
-                except Exception as e:
-                    self.logger.error(f'Error processing {json_msg}:')
-                    self.logger.exception(e)
-
     def process_action(self, action, event_data, json_msg):
         if not super(Scheduler, self).process_action(action, event_data, json_msg):
             return False
