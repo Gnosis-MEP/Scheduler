@@ -56,13 +56,10 @@ class Scheduler(BaseTracerService):
         if action == 'executeAdaptivePlan':
             dataflow = event_data['dataflow']
             self.execute_adaptive_plan(dataflow)
-        elif action == 'otherAction':
-            # do some other action
-            pass
 
     def log_state(self):
         super(Scheduler, self).log_state()
-        self.logger.info(f'My service name is: {self.name}')
+        self._log_dict('Bufferstream to Dataflow', self.bufferstream_to_dataflow)
 
     def run(self):
         super(Scheduler, self).run()
