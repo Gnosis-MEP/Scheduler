@@ -25,7 +25,7 @@ def send_action_msgs(service_cmd):
     msg_1 = new_action_msg(
         'executeAdaptivePlan',
         {
-            'dataflow': {'buffer1': ['service1', ['service2']]}
+            'dataflow': {'f32c1d9e6352644a5894305ecb478b0d': ['od-data', 'ed-data', 'wm-data']}
         }
     )
     # msg_2 = new_action_msg(
