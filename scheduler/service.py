@@ -1,3 +1,4 @@
+import functools
 import threading
 
 from event_service_utils.logging.decorators import timer_logger
@@ -32,9 +33,17 @@ class Scheduler(BaseTracerService):
     def execute_adaptive_plan(self, dataflow):
         self.bufferstream_to_dataflow = dataflow
 
-    def send_event_to_dispatcher(self, event_data):
-        self.logger.debug(f'Sending event to Event Dispather: {event_data}')
-        self.write_event_with_trace(event_data, self.event_dispatcher_data)
+    @functools.lru_cache(maxsize=5)
+    def get_destination_streams(self, destination):
+        return self.stream_factory.create(destination, stype='streamOnly')
+
+    def send_event_to_first_service_in_dataflow(self, event_data):
+
+        next_destinations = event_data['data_flow'][0]
+        for destination in next_destinations:
+            self.logger.debug(f'Sending event to "{destination}": {event_data}')
+            destination_stream = self.get_destination_streams(destination)
+            self.write_event_with_trace(event_data, destination_stream)
 
     def apply_dataflow_to_event(self, event_data):
         buffer_stream_key = event_data['buffer_stream_key']
@@ -51,7 +60,7 @@ class Scheduler(BaseTracerService):
         if not super(Scheduler, self).process_data_event(event_data, json_msg):
             return False
         new_event_data = self.apply_dataflow_to_event(event_data)
-        self.send_event_to_dispatcher(new_event_data)
+        self.send_event_to_first_service_in_dataflow(new_event_data)
 
     def process_action(self, action, event_data, json_msg):
         if not super(Scheduler, self).process_action(action, event_data, json_msg):

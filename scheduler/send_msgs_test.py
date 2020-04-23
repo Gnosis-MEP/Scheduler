@@ -47,7 +47,7 @@ def send_data_msg(service_stream):
         'event': json.dumps(
             {
                 'id': str(uuid.uuid4()),
-                'buffer_stream_key': 'buffer1'
+                'buffer_stream_key': 'f32c1d9e6352644a5894305ecb478b0d'
             }
         )
     }
