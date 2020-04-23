@@ -26,7 +26,7 @@ class Scheduler(BaseTracerService):
         self.event_dispatcher_data = self.stream_factory.create(key=event_dispatcher_data_key, stype='streamOnly')
 
         self.bufferstream_to_dataflow = {
-            'f32c1d9e6352644a5894305ecb478b0d': [['ed-data'], ['object-detection-data'], ['ed-data'], ['wm-data']]
+            'f32c1d9e6352644a5894305ecb478b0d': [['object-detection-data'], ['wm-data']]
         }
 
     def execute_adaptive_plan(self, dataflow):
