@@ -62,8 +62,8 @@ class TestScheduler(MockedServiceStreamTestCase):
         )
 
     @patch('scheduler.service.Scheduler.apply_dataflow_to_event')
-    @patch('scheduler.service.Scheduler.send_event_to_dispatcher')
-    def test_process_data_event_should_call_send_event_to_dispatcher(self, mocked_send_dispatcher, mocked_apply_dataflow):
+    @patch('scheduler.service.Scheduler.send_event_to_first_service_in_dataflow')
+    def test_process_data_event_should_call_send_event_to_first_service_in_dataflow(self, mocked_send_event, mocked_apply_dataflow):
         event_data = {
             'id': 1,
             'buffer_stream_key': 'buffer-key',
@@ -80,8 +80,8 @@ class TestScheduler(MockedServiceStreamTestCase):
 
         self.service.process_data_event(event_data, msg_tuple[1])
 
-        self.assertTrue(mocked_send_dispatcher.called)
-        mocked_send_dispatcher.assert_called_once_with(
+        self.assertTrue(mocked_send_event.called)
+        mocked_send_event.assert_called_once_with(
             event_data_with_dataflow
         )
 

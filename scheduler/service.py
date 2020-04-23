@@ -38,7 +38,6 @@ class Scheduler(BaseTracerService):
         return self.stream_factory.create(destination, stype='streamOnly')
 
     def send_event_to_first_service_in_dataflow(self, event_data):
-
         next_destinations = event_data['data_flow'][0]
         for destination in next_destinations:
             self.logger.debug(f'Sending event to "{destination}": {event_data}')
