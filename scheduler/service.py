@@ -38,7 +38,8 @@ class Scheduler(BaseTracerService):
         return self.stream_factory.create(destination, stype='streamOnly')
 
     def send_event_to_first_service_in_dataflow(self, event_data):
-        next_destinations = event_data['data_flow'][0]
+        event_dataflow = event_data.get('data_flow', [[]])
+        next_destinations = event_dataflow[0] if len(event_dataflow) != 0 else []
         for destination in next_destinations:
             self.logger.debug(f'Sending event to "{destination}": {event_data}')
             destination_stream = self.get_destination_streams(destination)
@@ -47,11 +48,14 @@ class Scheduler(BaseTracerService):
     def apply_dataflow_to_event(self, event_data):
         buffer_stream_key = event_data['buffer_stream_key']
         data_flow = self.bufferstream_to_dataflow.get(buffer_stream_key, [])
-        if data_flow is not None:
+        if len(data_flow) != 0:
             event_data.update({
                 'data_flow': data_flow,
                 'data_path': [],
             })
+        else:
+            self.logger.warning(f'Event data wihout a known buffer stream dataflow plan: {event_data}. Ignoring event.')
+            return None
         return event_data
 
     @timer_logger
@@ -59,7 +63,8 @@ class Scheduler(BaseTracerService):
         if not super(Scheduler, self).process_data_event(event_data, json_msg):
             return False
         new_event_data = self.apply_dataflow_to_event(event_data)
-        self.send_event_to_first_service_in_dataflow(new_event_data)
+        if new_event_data:
+            self.send_event_to_first_service_in_dataflow(new_event_data)
 
     def process_action(self, action, event_data, json_msg):
         if not super(Scheduler, self).process_action(action, event_data, json_msg):
