@@ -70,7 +70,7 @@ class Scheduler(BaseTracerService):
 
     def apply_dataflow_to_event(self, event_data):
         buffer_stream_key = event_data['buffer_stream_key']
-        data_flow = self.bufferstream_to_dataflow.get(buffer_stream_key, [])
+        data_flow = self.get_bufferstream_dataflow(buffer_stream_key)
         if len(data_flow) != 0:
             event_data.update({
                 'data_flow': data_flow,
