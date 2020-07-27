@@ -8,7 +8,8 @@ from scheduler.service import Scheduler
 from scheduler.conf import (
     SERVICE_STREAM_KEY,
     SERVICE_CMD_KEY,
-    EVENT_DISPATCHER_STREAM_KEY
+    EVENT_DISPATCHER_STREAM_KEY,
+    SCHEDULING_STRATEGY
 )
 
 
@@ -17,6 +18,7 @@ class TestScheduler(MockedServiceStreamTestCase):
         'service_stream_key': SERVICE_STREAM_KEY,
         'service_cmd_key': SERVICE_CMD_KEY,
         'event_dispatcher_data_key': EVENT_DISPATCHER_STREAM_KEY,
+        'scheduling_strategy': SCHEDULING_STRATEGY,
         'logging_level': 'ERROR',
         'tracer_configs': {'reporting_host': None, 'reporting_port': None},
     }
