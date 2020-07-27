@@ -1,4 +1,5 @@
 import functools
+import random
 import threading
 
 from event_service_utils.logging.decorators import timer_logger
@@ -10,6 +11,7 @@ class Scheduler(BaseTracerService):
     def __init__(self,
                  service_stream_key, service_cmd_key,
                  event_dispatcher_data_key,
+                 scheduling_strategy,
                  stream_factory,
                  logging_level,
                  tracer_configs):
@@ -29,6 +31,17 @@ class Scheduler(BaseTracerService):
         self.bufferstream_to_dataflow = {
             # 'f32c1d9e6352644a5894305ecb478b0d': [['object-detection-data'], ['wm-data']]
         }
+        self.setup_scheduling_strategy(scheduling_strategy)
+
+    def setup_scheduling_strategy(self, scheduling_strategy):
+        # random:object-detection-ssd-gpu-data,wm-data/object-detection-ssd-data,wm-data
+        self.scheduling_strategy = scheduling_strategy
+        if 'random:' in self.scheduling_strategy:
+
+            available_dataflows_txt = self.scheduling_strategy.split('random:')[1].split('/')
+            available_dataflows = list(map(lambda d: [[s] for s in d.split(',')], available_dataflows_txt))
+
+            self._random_bufferstream_to_dataflow = available_dataflows
 
     def execute_adaptive_plan(self, dataflow):
         self.bufferstream_to_dataflow = dataflow
@@ -44,6 +57,16 @@ class Scheduler(BaseTracerService):
             self.logger.debug(f'Sending event to "{destination}": {event_data}')
             destination_stream = self.get_destination_streams(destination)
             self.write_event_with_trace(event_data, destination_stream)
+
+    def get_random_buffer_stream_dataflow(self):
+        return random.choice(self._random_bufferstream_to_dataflow)
+
+    def get_bufferstream_dataflow(self, buffer_stream_key):
+        if 'random' in self.scheduling_strategy:
+            data_flow = self.get_random_buffer_stream_dataflow()
+        elif self.scheduling_strategy == 'self-adaptive':
+            data_flow = self.bufferstream_to_dataflow.get(buffer_stream_key, [])
+        return data_flow
 
     def apply_dataflow_to_event(self, event_data):
         buffer_stream_key = event_data['buffer_stream_key']
@@ -76,9 +99,13 @@ class Scheduler(BaseTracerService):
     def log_state(self):
         super(Scheduler, self).log_state()
         self._log_dict('Bufferstream to Dataflow', self.bufferstream_to_dataflow)
+        self.logger.info(f'Scheduling Stratefy: {self.scheduling_strategy}')
+        if 'random' in self.scheduling_strategy:
+            self.logger.info(f'Random dataflows: {self._random_bufferstream_to_dataflow}')
 
     def run(self):
         super(Scheduler, self).run()
+        self.log_state()
         self.cmd_thread = threading.Thread(target=self.run_forever, args=(self.process_cmd,))
         self.data_thread = threading.Thread(target=self.run_forever, args=(self.process_data,))
         self.cmd_thread.start()
