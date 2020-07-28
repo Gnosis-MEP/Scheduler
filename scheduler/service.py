@@ -6,6 +6,9 @@ from event_service_utils.logging.decorators import timer_logger
 from event_service_utils.services.tracer import BaseTracerService
 from event_service_utils.tracing.jaeger import init_tracer
 
+from .strategies.weighted_rand import WeightedRandomStrategy
+from .strategies.single_best_dataflow import SingleBestStrategy
+
 
 class Scheduler(BaseTracerService):
     def __init__(self,
@@ -31,20 +34,25 @@ class Scheduler(BaseTracerService):
         self.bufferstream_to_dataflow = {
             # 'f32c1d9e6352644a5894305ecb478b0d': [['object-detection-data'], ['wm-data']]
         }
-        self.setup_scheduling_strategy(scheduling_strategy)
+        self.setup_scheduling_strategies()
 
-    def setup_scheduling_strategy(self, scheduling_strategy):
-        # random:object-detection-ssd-gpu-data,wm-data/object-detection-ssd-data,wm-data
-        self.scheduling_strategy = scheduling_strategy
-        if 'random:' in self.scheduling_strategy:
+    def setup_scheduling_strategies(self):
+        self.scheduling_strategies = {
+            'weigted_random': WeightedRandomStrategy(self),
+            'single_best': SingleBestStrategy(self),
+        }
+        default_strategy = 'weigted_random'
+        self.current_strategy = self.scheduling_strategies[default_strategy]
 
-            available_dataflows_txt = self.scheduling_strategy.split('random:')[1].split('/')
-            available_dataflows = list(map(lambda d: [[s] for s in d.split(',')], available_dataflows_txt))
-
-            self._random_bufferstream_to_dataflow = available_dataflows
-
-    def execute_adaptive_plan(self, dataflow):
-        self.bufferstream_to_dataflow = dataflow
+    def execute_adaptive_plan(self, strategy_data):
+        strategy_name = strategy_data['name']
+        strategy = self.scheduling_strategies.get(strategy_name)
+        if strategy is None:
+            self.logger.error(f'No strategy named "{strategy_name}" available that meets adaptive plan.')
+            self.logger.error(f'Will ignore new stragegy plan.')
+            return
+        self.current_strategy = strategy
+        self.current_strategy.update(strategy_data)
 
     @functools.lru_cache(maxsize=5)
     def get_destination_streams(self, destination):
@@ -62,11 +70,12 @@ class Scheduler(BaseTracerService):
         return random.choice(self._random_bufferstream_to_dataflow)
 
     def get_bufferstream_dataflow(self, buffer_stream_key):
-        if 'random' in self.scheduling_strategy:
-            data_flow = self.get_random_buffer_stream_dataflow()
-        elif self.scheduling_strategy == 'self-adaptive':
-            data_flow = self.bufferstream_to_dataflow.get(buffer_stream_key, [])
-        return data_flow
+        return self.current_strategy.get_bufferstream_dataflow(buffer_stream_key)
+        # if 'random' in self.scheduling_strategy:
+        #     data_flow = self.get_random_buffer_stream_dataflow()
+        # elif self.scheduling_strategy == 'self-adaptive':
+        #     data_flow = self.bufferstream_to_dataflow.get(buffer_stream_key, [])
+        # return data_flow
 
     def apply_dataflow_to_event(self, event_data):
         buffer_stream_key = event_data['buffer_stream_key']
@@ -93,15 +102,26 @@ class Scheduler(BaseTracerService):
         if not super(Scheduler, self).process_action(action, event_data, json_msg):
             return False
         if action == 'executeAdaptivePlan':
-            dataflow = event_data['dataflow']
-            self.execute_adaptive_plan(dataflow)
+            if 'strategy' not in event_data:
+                self.logger.info('Backward compat, not strategy, enforcing single best')
+                scheduling_strategy = {
+                    'name': 'single_best',
+                    'dataflows': {
+                        k: [[None, v]]
+                        for k, v in event_data['dataflow'].items()
+                    }
+                }
+            else:
+                scheduling_strategy = event_data['strategy']
+            self.execute_adaptive_plan(scheduling_strategy)
 
     def log_state(self):
         super(Scheduler, self).log_state()
         self._log_dict('Bufferstream to Dataflow', self.bufferstream_to_dataflow)
-        self.logger.info(f'Scheduling Stratefy: {self.scheduling_strategy}')
-        if 'random' in self.scheduling_strategy:
-            self.logger.info(f'Random dataflows: {self._random_bufferstream_to_dataflow}')
+        self.current_strategy.log_state()
+        # self.logger.info(f'Scheduling Stratefy: {self.scheduling_strategy}')
+        # if 'random' in self.scheduling_strategy:
+        #     self.logger.info(f'Random dataflows: {self._random_bufferstream_to_dataflow}')
 
     def run(self):
         super(Scheduler, self).run()

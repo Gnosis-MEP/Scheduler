@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from event_service_utils.tests.base_test_case import MockedServiceStreamTestCase
 from event_service_utils.tests.json_msg_helper import prepare_event_msg_tuple
@@ -60,7 +60,10 @@ class TestScheduler(MockedServiceStreamTestCase):
 
         self.assertTrue(mocked_execute_plan.called)
         mocked_execute_plan.assert_called_once_with(
-            dataflow
+            {
+                'name': 'single_best',
+                'dataflows': dataflow
+            }
         )
 
     @patch('scheduler.service.Scheduler.apply_dataflow_to_event')
@@ -87,15 +90,19 @@ class TestScheduler(MockedServiceStreamTestCase):
             event_data_with_dataflow
         )
 
-    def test_apply_dataflow_to_event_should_add_correct_fields(self):
+    @patch('scheduler.service.Scheduler.get_bufferstream_dataflow')
+    def test_apply_dataflow_to_event_should_add_correct_fields(self, get_dataflow):
         event_data = {
             'id': 1,
             'buffer_stream_key': 'buffer-stream-key1',
         }
-        self.service.bufferstream_to_dataflow = {
-            'buffer-stream-key1': ['service-stream1', 'service-stream2'],
-            'buffer-stream-key2': ['service-stream3', 'service-stream4'],
-        }
+
+        get_dataflow.side_effect = (['service-stream1', 'service-stream2'], ['service-stream3', 'service-stream4'])
+
+        # self.service.bufferstream_to_dataflow = {
+        #     'buffer-stream-key1': ['service-stream1', 'service-stream2'],
+        #     'buffer-stream-key2': ['service-stream3', 'service-stream4'],
+        # }
 
         altered_event = self.service.apply_dataflow_to_event(event_data)
         self.assertIn('data_flow', altered_event)
