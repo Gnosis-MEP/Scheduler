@@ -38,10 +38,11 @@ class Scheduler(BaseTracerService):
 
     def setup_scheduling_strategies(self):
         self.scheduling_strategies = {
-            'weigted_random': WeightedRandomStrategy(self),
+            'weighted_random': WeightedRandomStrategy(self),
+            'weigted_random': WeightedRandomStrategy(self),  #backward compat with the bad typo
             'single_best': SingleBestStrategy(self),
         }
-        default_strategy = 'weigted_random'
+        default_strategy = 'weighted_random'
         self.current_strategy = self.scheduling_strategies[default_strategy]
 
     def execute_adaptive_plan(self, strategy_data):
