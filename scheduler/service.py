@@ -8,6 +8,7 @@ from event_service_utils.tracing.jaeger import init_tracer
 
 from .strategies.weighted_rand import WeightedRandomStrategy
 from .strategies.single_best_dataflow import SingleBestStrategy
+from .strategies.random import RandomStrategy
 
 
 class Scheduler(BaseTracerService):
@@ -39,7 +40,7 @@ class Scheduler(BaseTracerService):
     def setup_scheduling_strategies(self):
         self.scheduling_strategies = {
             'weighted_random': WeightedRandomStrategy(self),
-            'weigted_random': WeightedRandomStrategy(self),  #backward compat with the bad typo
+            'random': RandomStrategy(self),
             'single_best': SingleBestStrategy(self),
         }
         default_strategy = 'weighted_random'
