@@ -107,5 +107,5 @@ class TestScheduler(MockedServiceStreamTestCase):
         altered_event = self.service.apply_dataflow_to_event(event_data)
         self.assertIn('data_flow', altered_event)
         self.assertIn('data_path', altered_event)
-        self.assertEquals(['service-stream1', 'service-stream2'], altered_event['data_flow'])
-        self.assertEquals([], altered_event['data_path'])
+        self.assertEqual(['service-stream1', 'service-stream2'], altered_event['data_flow'])
+        self.assertEqual([], altered_event['data_path'])
