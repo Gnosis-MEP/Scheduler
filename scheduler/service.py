@@ -3,7 +3,7 @@ import random
 import threading
 
 from event_service_utils.logging.decorators import timer_logger
-from event_service_utils.services.tracer import BaseTracerService
+from event_service_utils.services.tracer import BaseTracerService, tags, EVENT_ID_TAG
 from event_service_utils.tracing.jaeger import init_tracer
 
 from .strategies.weighted_rand import WeightedRandomStrategy
@@ -43,6 +43,7 @@ class Scheduler(BaseTracerService):
             'weighted_random': WeightedRandomStrategy(self),
             'random': RandomStrategy(self),
             'single_best': SingleBestStrategy(self),
+            'single_best_load_shedding': SingleBestStrategy(self),
             'round_robin': RoundRobinStrategy(self),
         }
         default_strategy = 'weighted_random'
@@ -81,6 +82,10 @@ class Scheduler(BaseTracerService):
         #     data_flow = self.bufferstream_to_dataflow.get(buffer_stream_key, [])
         # return data_flow
 
+    def check_if_shedding_event(self, event_data):
+        buffer_stream_key = event_data['buffer_stream_key']
+        return self.current_strategy.is_shedding_event(buffer_stream_key)
+
     def apply_dataflow_to_event(self, event_data):
         buffer_stream_key = event_data['buffer_stream_key']
         data_flow = self.get_bufferstream_dataflow(buffer_stream_key)
@@ -94,13 +99,31 @@ class Scheduler(BaseTracerService):
             return None
         return event_data
 
+    def event_load_shedding(self, event_data):
+        self.logger.debug(f'[Load shedding] dropping event: {event_data}')
+
     @timer_logger
     def process_data_event(self, event_data, json_msg):
         if not super(Scheduler, self).process_data_event(event_data, json_msg):
             return False
-        new_event_data = self.apply_dataflow_to_event(event_data)
-        if new_event_data:
-            self.send_event_to_first_service_in_dataflow(new_event_data)
+        if not self.check_if_shedding_event(event_data):
+            new_event_data = self.apply_dataflow_to_event(event_data)
+            if new_event_data:
+                self.send_event_to_first_service_in_dataflow(new_event_data)
+        else:
+            self.event_trace_for_method_with_event_data(
+                method=self.event_load_shedding,
+                method_args=(),
+                method_kwargs={
+                    'event_data': event_data,
+                },
+                get_event_tracer=True,
+                tracer_tags={
+                    tags.SPAN_KIND: tags.SPAN_KIND_CONSUMER,
+                    'bufferstream': event_data['buffer_stream_key'],
+                    EVENT_ID_TAG: event_data['id'],
+                }
+            )
 
     def process_action(self, action, event_data, json_msg):
         if not super(Scheduler, self).process_action(action, event_data, json_msg):
