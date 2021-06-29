@@ -89,6 +89,25 @@ class Scheduler(BaseTracerService):
     def apply_dataflow_to_event(self, event_data):
         buffer_stream_key = event_data['buffer_stream_key']
         data_flow = self.get_bufferstream_dataflow(buffer_stream_key)
+
+        # if is load shedding
+        if data_flow is None:
+            self.event_trace_for_method_with_event_data(
+                method=self.log_event_load_shedding,
+                method_args=(),
+                method_kwargs={
+                    'event_data': event_data,
+                },
+                get_event_tracer=True,
+                tracer_tags={
+                    tags.SPAN_KIND: tags.SPAN_KIND_CONSUMER,
+                    'bufferstream': buffer_stream_key,
+                    EVENT_ID_TAG: event_data['id'],
+                }
+            )
+            return None
+
+        # if is load shedding because there is no proper plan to handle this event
         if len(data_flow) != 0:
             event_data.update({
                 'data_flow': data_flow,
@@ -99,31 +118,16 @@ class Scheduler(BaseTracerService):
             return None
         return event_data
 
-    def event_load_shedding(self, event_data):
+    def log_event_load_shedding(self, event_data):
         self.logger.debug(f'[Load shedding] dropping event: {event_data}')
 
     @timer_logger
     def process_data_event(self, event_data, json_msg):
         if not super(Scheduler, self).process_data_event(event_data, json_msg):
             return False
-        if not self.check_if_shedding_event(event_data):
-            new_event_data = self.apply_dataflow_to_event(event_data)
-            if new_event_data:
-                self.send_event_to_first_service_in_dataflow(new_event_data)
-        else:
-            self.event_trace_for_method_with_event_data(
-                method=self.event_load_shedding,
-                method_args=(),
-                method_kwargs={
-                    'event_data': event_data,
-                },
-                get_event_tracer=True,
-                tracer_tags={
-                    tags.SPAN_KIND: tags.SPAN_KIND_CONSUMER,
-                    'bufferstream': event_data['buffer_stream_key'],
-                    EVENT_ID_TAG: event_data['id'],
-                }
-            )
+        new_event_data = self.apply_dataflow_to_event(event_data)
+        if new_event_data:
+            self.send_event_to_first_service_in_dataflow(new_event_data)
 
     def process_action(self, action, event_data, json_msg):
         if not super(Scheduler, self).process_action(action, event_data, json_msg):

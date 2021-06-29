@@ -6,6 +6,7 @@ class SingleBestStrategy(BaseStrategy):
     def __init__(self, parent_service):
         super(SingleBestStrategy, self).__init__(parent_service)
         self.bufferstream_to_dataflow = {}
+        self.bufferstream_load_shedding = {}
 
     def update(self, strategy_plan):
         dataflows_dict = strategy_plan['dataflows']
@@ -17,7 +18,11 @@ class SingleBestStrategy(BaseStrategy):
                 self.bufferstream_to_dataflow[buffer_stream_key] = dataflows[0][1]
 
     def get_bufferstream_dataflow(self, buffer_stream_key):
-        return self.bufferstream_to_dataflow.get(buffer_stream_key, [])
+        dataflow = self.bufferstream_to_dataflow.get(buffer_stream_key, [])
+        load_shedding_rate = self.bufferstream_load_shedding.get(buffer_stream_key, 0)
+        if self.is_shedding_event(load_shedding_rate):
+            dataflow = None
+        return dataflow
 
     def log_state(self):
         super(SingleBestStrategy, self).log_state()

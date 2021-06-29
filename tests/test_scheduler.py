@@ -109,3 +109,18 @@ class TestScheduler(MockedServiceStreamTestCase):
         self.assertIn('data_path', altered_event)
         self.assertEqual(['service-stream1', 'service-stream2'], altered_event['data_flow'])
         self.assertEqual([], altered_event['data_path'])
+
+    @patch('scheduler.service.Scheduler.get_bufferstream_dataflow')
+    def test_apply_dataflow_to_event_log_load_shedding_when_dataflow_is_none(self, get_dataflow):
+        event_data = {
+            'id': 1,
+            'buffer_stream_key': 'buffer-stream-key1',
+        }
+
+        get_dataflow.return_value = None
+        event_trace_mock = MagicMock()
+        self.service.event_trace_for_method_with_event_data = event_trace_mock
+
+        altered_event = self.service.apply_dataflow_to_event(event_data)
+        self.assertEqual(altered_event, None)
+        self.assertTrue(event_trace_mock.called)
