@@ -41,6 +41,7 @@ class Scheduler(BaseTracerService):
     def setup_scheduling_strategies(self):
         self.scheduling_strategies = {
             'weighted_random': WeightedRandomStrategy(self),
+            'weighted_random_load_shedding': WeightedRandomStrategy(self),
             'random': RandomStrategy(self),
             'single_best': SingleBestStrategy(self),
             'single_best_load_shedding': SingleBestStrategy(self),
