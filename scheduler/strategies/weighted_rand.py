@@ -24,7 +24,7 @@ class WeightedRandomStrategy(BaseStrategy):
             return zipped_dataflow_weighted_choices
 
         if self.has_load_shedding:
-            cum_weights, load_shedding_choices, dataflow_choices = list(zip(*zipped_dataflow_weighted_choices))
+            load_shedding_choices, cum_weights, dataflow_choices = list(zip(*zipped_dataflow_weighted_choices))
         else:
             cum_weights, dataflow_choices = list(zip(*zipped_dataflow_weighted_choices))
 
