@@ -51,6 +51,14 @@ class Scheduler(BaseEventDrivenCMDService):
         default_scheduling_strategy = 'weighted_random'
         self.current_strategy = self.scheduling_strategies[default_scheduling_strategy]
 
+    def publish_scheduling_plan_executed(self, adaptive_plan):
+        event_type = 'SchedulingPlanExecuted'
+        new_event_data = {
+            'id': self.service_based_random_event_id(),
+            'plan': adaptive_plan
+        }
+        self.publish_event_type_to_stream(event_type=event_type, new_event_data=new_event_data)
+
     def execute_adaptive_plan(self, strategy_data):
         strategy_name = strategy_data['name']
         strategy = self.scheduling_strategies.get(strategy_name)
@@ -123,9 +131,11 @@ class Scheduler(BaseEventDrivenCMDService):
             self.send_event_to_first_service_in_dataflow(new_event_data)
 
     def process_adaptive_plan(self, event_data):
-        execution_plan = event_data['plan']['execution_plan']
+        adaptive_plan = event_data['plan']
+        execution_plan = adaptive_plan['execution_plan']
         scheduling_strategy = execution_plan['strategy']
         self.execute_adaptive_plan(scheduling_strategy)
+        self.publish_scheduling_plan_executed(event_data['plan'])
 
     def process_event_type(self, event_type, event_data, json_msg):
         if not super(Scheduler, self).process_event_type(event_type, event_data, json_msg):
