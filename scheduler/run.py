@@ -6,14 +6,15 @@ from scheduler.service import Scheduler
 from scheduler.conf import (
     REDIS_ADDRESS,
     REDIS_PORT,
-    REDIS_MAX_STREAM_SIZE,
+    PUB_EVENT_LIST,
     SERVICE_STREAM_KEY,
-    EVENT_DISPATCHER_STREAM_KEY,
-    SCHEDULING_STRATEGY,
-    SERVICE_CMD_KEY,
+    SERVICE_CMD_KEY_LIST,
     LOGGING_LEVEL,
     TRACER_REPORTING_HOST,
     TRACER_REPORTING_PORT,
+    SERVICE_DETAILS,
+    REDIS_MAX_STREAM_SIZE,
+    DEFAULT_SCHEDULING_STRATEGY,
 )
 
 
@@ -25,10 +26,11 @@ def run_service():
     stream_factory = RedisStreamFactory(host=REDIS_ADDRESS, port=REDIS_PORT, max_stream_length=REDIS_MAX_STREAM_SIZE)
     service = Scheduler(
         service_stream_key=SERVICE_STREAM_KEY,
-        service_cmd_key=SERVICE_CMD_KEY,
-        event_dispatcher_data_key=EVENT_DISPATCHER_STREAM_KEY,
-        scheduling_strategy=SCHEDULING_STRATEGY,
+        service_cmd_key_list=SERVICE_CMD_KEY_LIST,
+        pub_event_list=PUB_EVENT_LIST,
+        service_details=SERVICE_DETAILS,
         stream_factory=stream_factory,
+        default_scheduling_strategy=DEFAULT_SCHEDULING_STRATEGY,
         logging_level=LOGGING_LEVEL,
         tracer_configs=tracer_configs
     )
