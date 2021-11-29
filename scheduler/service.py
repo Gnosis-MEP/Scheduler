@@ -77,15 +77,6 @@ class Scheduler(BaseTracerService):
 
     def get_bufferstream_dataflow(self, buffer_stream_key):
         return self.current_strategy.get_bufferstream_dataflow(buffer_stream_key)
-        # if 'random' in self.scheduling_strategy:
-        #     data_flow = self.get_random_buffer_stream_dataflow()
-        # elif self.scheduling_strategy == 'self-adaptive':
-        #     data_flow = self.bufferstream_to_dataflow.get(buffer_stream_key, [])
-        # return data_flow
-
-    def check_if_shedding_event(self, event_data):
-        buffer_stream_key = event_data['buffer_stream_key']
-        return self.current_strategy.is_shedding_event(buffer_stream_key)
 
     def apply_dataflow_to_event(self, event_data):
         buffer_stream_key = event_data['buffer_stream_key']
