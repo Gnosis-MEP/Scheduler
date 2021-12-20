@@ -41,14 +41,14 @@ class Scheduler(BaseEventDrivenCMDService):
 
     def setup_scheduling_strategies(self, default_scheduling_strategy):
         self.scheduling_strategies = {
-            'weighted_random': WeightedRandomStrategy(self),
-            'weighted_random_load_shedding': WeightedRandomStrategy(self),
+            'QQoS-W-HP': WeightedRandomStrategy(self),
+            'QQoS-W-HP-LS': WeightedRandomStrategy(self),
             'random': RandomStrategy(self),
-            'single_best': SingleBestStrategy(self),
-            'single_best_load_shedding': SingleBestStrategy(self),
+            'QQoS-TK-LP': SingleBestStrategy(self),
+            'QQoS-TK-LP-LS': SingleBestStrategy(self),
             'round_robin': RoundRobinStrategy(self),
         }
-        default_scheduling_strategy = 'weighted_random'
+        default_scheduling_strategy = 'QQoS-W-HP'
         self.current_strategy = self.scheduling_strategies[default_scheduling_strategy]
 
     def publish_scheduling_plan_executed(self, adaptive_plan):

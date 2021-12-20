@@ -11,7 +11,7 @@ class SingleBestStrategy(BaseStrategy):
     def update(self, strategy_plan):
         dataflows_dict = strategy_plan['dataflows']
         for buffer_stream_key, dataflows in dataflows_dict.items():
-            if 'load_shedding' in strategy_plan['name']:
+            if '-LS' in strategy_plan['name']:
                 self.bufferstream_to_dataflow[buffer_stream_key] = dataflows[0][2]
                 self.bufferstream_load_shedding[buffer_stream_key] = dataflows[0][0]
             else:
