@@ -12,7 +12,7 @@ class WeightedRandomStrategy(BaseStrategy):
 
     def update(self, strategy_plan):
         dataflows = strategy_plan['dataflows']
-        self.has_load_shedding = 'load_shedding' in strategy_plan['name']
+        self.has_load_shedding = '-LS' in strategy_plan['name']
         self.bufferstream_to_dataflow_choices = dataflows
 
     def get_bufferstream_dataflow(self, buffer_stream_key):
