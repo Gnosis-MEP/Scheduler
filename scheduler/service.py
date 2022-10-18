@@ -11,6 +11,15 @@ from .strategies.single_best_dataflow import SingleBestStrategy
 from .strategies.round_robin import RoundRobinStrategy
 from .strategies.random import RandomStrategy
 
+from .conf import (
+    LISTEN_EVENT_TYPE_NEW_QUERY_SCHEDULING_PLANNED,
+    LISTEN_EVENT_TYPE_SERVICE_WORKER_SLR_PROFILE_PLANNED,
+    LISTEN_EVENT_TYPE_SERVICE_WORKER_OVERLOADED_PLANNED,
+    LISTEN_EVENT_TYPE_SERVICE_WORKER_BEST_IDLE_PLANNED,
+    LISTEN_EVENT_TYPE_UNNECESSARY_LOAD_SHEDDING_PLANNED,
+    PUB_EVENT_TYPE_SCHEDULING_PLAN_EXECUTED,
+)
+
 
 class Scheduler(BaseEventDrivenCMDService):
     def __init__(self,
@@ -52,7 +61,7 @@ class Scheduler(BaseEventDrivenCMDService):
         self.current_strategy = self.scheduling_strategies[default_scheduling_strategy]
 
     def publish_scheduling_plan_executed(self, adaptive_plan):
-        event_type = 'SchedulingPlanExecuted'
+        event_type = PUB_EVENT_TYPE_SCHEDULING_PLAN_EXECUTED
         new_event_data = {
             'id': self.service_based_random_event_id(),
             'plan': adaptive_plan
@@ -141,10 +150,11 @@ class Scheduler(BaseEventDrivenCMDService):
         if not super(Scheduler, self).process_event_type(event_type, event_data, json_msg):
             return False
         plan_requests_types = [
-            'ServiceWorkerOverloadedPlanned',
-            'ServiceWorkerBestIdlePlanned',
-            'UnnecessaryLoadSheddingPlanned',
-            'NewQuerySchedulingPlanned',
+            LISTEN_EVENT_TYPE_NEW_QUERY_SCHEDULING_PLANNED,
+            LISTEN_EVENT_TYPE_SERVICE_WORKER_SLR_PROFILE_PLANNED,
+            LISTEN_EVENT_TYPE_SERVICE_WORKER_OVERLOADED_PLANNED,
+            LISTEN_EVENT_TYPE_SERVICE_WORKER_BEST_IDLE_PLANNED,
+            LISTEN_EVENT_TYPE_UNNECESSARY_LOAD_SHEDDING_PLANNED,
         ]
         if event_type in plan_requests_types:
             self.process_adaptive_plan(event_data)
